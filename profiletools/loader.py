@@ -3,6 +3,8 @@ import glob
 
 import yaml
 
+from profiletools.path import esc, sub
+
 
 class ProfileLoader(object):
 
@@ -72,3 +74,17 @@ class Profile(object):
 
     def __str__(self):
         return 'Profile(%s)' % self.settings['name']
+
+    def walk(self, top):
+        """
+        walk(profile.path, '~') yields (relative, absolute) pairs like this:
+
+        ~/.emacs, {profile.path}/__HOME__/.emacs
+        """
+        root = os.path.expanduser(self.path)
+        top = os.path.join(root, esc(top).lstrip(os.path.sep))
+        for dirname, dirnames, filenames in os.walk(top):
+            for filename in filenames:
+                src = os.path.join(dirname, filename)
+                rel = sub(src[len(root)+1:])
+                yield rel, src

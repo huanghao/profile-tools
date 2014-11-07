@@ -1,55 +1,37 @@
 """
-There are three types of pathes:
+Two types of relative path:
 
-- *real* path in the file system
-  /home/alice/.emacs
-  /chroot/home/alice/.emacs
+- *quoted*
+  __HOME__/.emacs
+  __HOME__/.ssh/config
 
-- *relative* path to inside a target-root
+- *unquoted" (always not expanduser)
   ~/.emacs
-  ~/.ssh/.config
+  ~/.ssh/config
 
-- *escaped* path inside a profile-root
-  __HOME__/__emacs
-  __HOME__/__ssh/__config
+Two types of absoluate path:
 
-Use these functions to convert between them:
+- inside of profile-root
+  {profile-root|expanduser}/{quoted}
 
-- sub: escaped -> relative
-- esc: relative -> escaped
+- inside of target-root
+  {target-root|expanduser}/{unquoted|expanduser}
+
+Functions:
+
+- esc: unquoted -> quoted
+- sub: quoted -> unquoted
+- pabs: (profile-root, unquoted) -> pabs
+- tabs: (target-root, quoted) -> tabs
 """
 import os
 
 
 def esc(path):
-    if '~' in path:
-        path = path.replace('~', '__HOME__')
-
-    parts = path.split(os.path.sep)
-    return os.path.sep.join(
-        ('__' + p[1:])
-        if p.startswith('.')
-        else p
-        for p in parts)
+    """relative -> escaped"""
+    return path.replace('~', '__HOME__')
 
 
 def sub(path):
-    def _t(p):
-        if p == '__HOME__':
-            return '~'
-        elif p.startswith('__'):
-            return '.' + p[2:]
-        else:
-            return p
-
-    parts = path.split(os.path.sep)
-    return os.path.sep.join(_t(p) for p in parts)
-
-
-def walk(profile):
-    top = os.path.join(ROOT, 'profiles', profile)
-    for dirpath, dirnames, filenames in os.walk(top):
-        path = dirpath[len(top)+1:]
-        for filename in filenames:
-            name = os.path.join(path, filename)
-            yield name, sub(name)
+    """escaped -> relative"""
+    return path.replace('__HOME__', '~')

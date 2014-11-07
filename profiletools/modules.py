@@ -36,36 +36,47 @@ class Module(object):
         """
         raise NotImplementError
 
+    def find(self, profile_root, target_root):
+        if 'from' in self.attrs:
+            profile = ProfileLoader(
+                profile_root).get(self.attrs['from'])
+        else:
+            profile = self.profile
+
+        if 'exclude' in self.attrs:
+            excludes = self.attrs['exclude'].split(',')
+            def exclude(path):
+                return any(path.startswith(ex) for ex in excludes)
+        else:
+            exclude = lambda _: False
+
+        for rel, src in profile.walk(self.attrs['path']):
+            if exclude and exclude(rel):
+                continue
+            to = os.path.join(
+                os.path.expanduser(target_root),
+                os.path.expanduser(sub(rel)).lstrip(os.path.sep))
+            yield src, to
+
+
 
 class Copy(Module):
     """
     Copy from another profile. Example::
 
-    copy: path=~/bin/*
-
-    copy: path=~/bin/* from=base
+    copy: path=~
+    copy: path=~ from=base
+    copy: path=~ exclude=~/bin,~/.ssh
     """
 
     def apply(self, args):
         print '>>>', self
-        #FIXME: copy: path=~/bin/* from=home
-        base = ProfileLoader(args.profile_root).get(self.attrs['from'])
-
-        path = os.path.join(
-            base.path,
-            esc(self.attrs['path']).lstrip(os.path.sep))
         i = 0
-        for src in glob.glob(path):
+        for src, to in self.find(args.profile_root, args.target_root):
             i += 1
-            rel = src.replace(base.path, '').lstrip(os.path.sep)
-            to = os.path.join(
-                os.path.expanduser(args.target_root),
-                os.path.expanduser(sub(rel)).lstrip(os.path.sep))
             copyfile(src, to)
             log.debug('%s -> %s', src, to)
-
         print i, 'file(s) copied'
-
         # TODO: check file exist and give choose
         # --yes to choose the default, normally means overwriting
 
@@ -75,7 +86,6 @@ class Patch(Module):
     Patch based on a file from another profile. Example:
 
     patch: path=~/.ssh/config
-
     patch: path=~/.ssh/config from=base
     """
     def apply(self, args):
@@ -96,38 +106,12 @@ class Patch(Module):
         log.debug('patch %s < %s', to, pat)
 
 
-class File(Module):
-    """
-    A file from current profile being applied. Example:
-
-    file: path=~/some.file
-    """
-    def apply(self, args):
-        print '>>>', self
-        #FIXME: refactor the same code block in Copy.apply
-        path = os.path.join(
-            self.profile.path,
-            esc(self.attrs['path'].lstrip(os.path.sep)))
-        i = 0
-        for src in glob.glob(path):
-            i += 1
-            rel = src.replace(self.profile.path, '').lstrip(os.path.sep)
-            to = os.path.join(
-                os.path.expanduser(args.target_root),
-                os.path.expanduser(sub(rel)).lstrip(os.path.sep))
-            copyfile(src, to)
-            log.debug('%s -> %s', src, to)
-
-        print i, 'file(s) copied'
-
-
 def all_modules():
     return {k.lower(): v
             for k, v in globals().items()
             if inspect.isclass(v) and issubclass(v, Module)}
             
 MODULES = all_modules()
-
 
 def parse_attrs(value):
     #FIXME: deal with whitespaces, enclosed by double quotes

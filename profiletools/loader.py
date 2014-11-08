@@ -30,6 +30,12 @@ def current_profile_name(target_root):
         raise ProfileNotFound(err)
 
 
+def set_current_profile_name(target_root, name):
+    current = current_profile_filename(target_root)
+    with open(current, 'w') as file:
+        file.write(name)
+
+
 class ProfileLoader(object):
 
     def __init__(self, root):

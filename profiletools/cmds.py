@@ -1,4 +1,6 @@
-from profiletools.loader import ProfileLoader, BadProfile, current_profile_name, ProfileNotFound
+from profiletools.loader import (
+    ProfileLoader, current_profile_name, set_current_profile_name,
+    BadProfile, ProfileNotFound)
 
 
 def list_cmd(args):
@@ -24,7 +26,7 @@ def list_cmd(args):
     if not found:
         print '*', current
 
-    print '\nuse "%s apply" to apply a profile.'
+    print 'use "%s apply" to apply a profile.'
 
 
 def st_cmd(args):
@@ -38,3 +40,4 @@ def apply_cmd(args):
     for mod in profile.settings['files']:
         mod.apply(args)
 
+    set_current_profile_name(args.target_root, args.profile_name)

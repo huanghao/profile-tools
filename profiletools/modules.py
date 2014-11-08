@@ -44,8 +44,9 @@ def is_the_same(file1, file2):
 BACKUP_PATH = os.path.expanduser('~/.my-profiles-backup')
 
 def back_up(path):
-    name = '%s.%s' % (time.time(), os.path.basename(path))
+    name = '%s_%s' % (time.time(), path.replace(os.path.sep, '_'))
     name = os.path.join(BACKUP_PATH, name)
+    print 'backup', path, 'to', name
     os.rename(path, name)
 
 
@@ -53,23 +54,26 @@ def patch(origin, patch, to):
     fd, tmp = tempfile.mkstemp()
     os.close(fd)
     shutil.copyfile(origin, tmp)
-    os.system('patch %s %s' % (tmp, patch))
-    check_target(tmp, to)
-    os.rename(tmp, to)
+    os.system('patch %s %s >/dev/null' % (tmp, patch))
+    if need_change(tmp, to):
+        os.rename(tmp, to)
+        return True
 
 
-def check_target(src, to):
+def need_change(src, to):
     if os.path.islink(to):
         os.unlink(to)
     elif os.path.exists(to):
         if is_the_same(src, to):
-            return
+            return False
         back_up(to)
+    return True
 
 
 def savecopy(src, to):
-    check_target(src, to)
-    return shutil.copy2(src, to)
+    if need_change(src, to):
+        shutil.copy2(src, to)
+        return True
 
 
 class Module(object):
@@ -127,10 +131,11 @@ class Copy(Module):
         print '>>>', self
         i = 0
         for src, to in self.find(args.profile_root, args.target_root):
-            i += 1
             log.debug('%s -> %s', src, to)
-            savecopy(src, to)
-        print i, 'file(s) copied'
+            if savecopy(src, to):
+                i += 1
+        if i > 0:
+            print i, 'file(s) copied'
         # TODO: check file exist and give choose
         # --yes to choose the default, normally means overwriting
 
@@ -154,7 +159,8 @@ class Patch(Module):
             os.path.expanduser(sub(rel)).lstrip(os.path.sep))
 
         log.debug('path: %s < %s > %s', src, pat, to)
-        patch(src, pat, to)
+        if patch(src, pat, to):
+            print '1 file patched'
 
 
 def all_modules():

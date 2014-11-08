@@ -18,6 +18,9 @@ def parse_args():
     p.add_argument('-r', '--profile-root',
         default=os.path.expanduser('~/.my-profiles'),
         help='root path contains all profiles')
+    p.add_argument('-t', '--target-root', default=os.path.sep,
+        help='target root path, default is "/"')
+
     sp = p.add_subparsers(title='subcommands')
 
     list_p = sp.add_parser('list', help='list all available profiles')
@@ -28,8 +31,6 @@ def parse_args():
 
     apply_p = sp.add_parser('apply', help='apply profile')
     apply_p.set_defaults(func=apply_cmd)
-    apply_p.add_argument('-t', '--target-root', default=os.path.sep,
-        help='target root path, default is "/"')
     apply_p.add_argument('profile_name')
 
     return p.parse_args()

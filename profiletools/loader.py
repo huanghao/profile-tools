@@ -6,6 +6,30 @@ import yaml
 from profiletools.path import esc, sub
 
 
+class ProfileNotFound(Exception):
+    pass
+
+
+class BadProfile(Exception):
+    pass
+
+
+def current_profile_filename(target_root):
+    return os.path.join(
+        target_root,
+        os.path.expanduser('~').lstrip(os.path.sep),
+        '.my-current-profile-name')
+
+
+def current_profile_name(target_root):
+    current = current_profile_filename(target_root)
+    try:
+        with open(current) as file:
+            return file.readline().rstrip()
+    except Exception as err:
+        raise ProfileNotFound(err)
+
+
 class ProfileLoader(object):
 
     def __init__(self, root):
@@ -22,14 +46,6 @@ class ProfileLoader(object):
         pattern = os.path.join(self.root, 'profiles', '*.yml')
         return (os.path.splitext(os.path.basename(i))[0]
                 for i in glob.glob(pattern))
-
-    def current(self):
-        current = os.path.join(self.root, 'current')
-        if os.path.exists(current):
-            with open(current) as file:
-                name = file.readline()
-            return self.get(name.rstrip())
-        raise ValueError("Can't find current profile name")
 
 
 class Profile(object):
@@ -54,8 +70,11 @@ class Profile(object):
     def load(self):
         from profiletools.modules import create_module, parse_attrs
 
-        with open(self.conf) as file:
-            data = yaml.load(file)
+        try:
+            with open(self.conf) as file:
+                data = yaml.load(file)
+        except Exception as err:
+            raise BadProfile(err)
 
         if 'from' in data:
             baseattrs = {'from': data['from']}

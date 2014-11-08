@@ -1,23 +1,28 @@
-from profiletools.loader import ProfileLoader
+from profiletools.loader import ProfileLoader, BadProfile, current_profile_name, ProfileNotFound
 
 
 def list_cmd(args):
     loader = ProfileLoader(args.profile_root)
     try:
-        current = loader.current()
-    except ValueError: #FIXME: specific exception need
-        current = None
+        current = current_profile_name(args.target_root)
+    except ProfileNotFound:
+        current = '(not found)'
+    else:
+        try:
+            loader.get(current)
+        except BadProfile:
+            current = '(unmanaged)'
 
     found = False
     for name in loader.names():
-        if current and name == current.name:
+        if name == current:
             print '*', name
             found = True
         else:
             print ' ', name
 
     if not found:
-        print '* (unmanaged)'
+        print '*', current
 
     print '\nuse "%s apply" to apply a profile.'
 
@@ -32,3 +37,4 @@ def apply_cmd(args):
 
     for mod in profile.settings['files']:
         mod.apply(args)
+

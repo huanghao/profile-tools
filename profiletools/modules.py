@@ -2,8 +2,10 @@ import os
 import glob
 import time
 import inspect
-import logging
 import shutil
+import logging
+import hashlib
+import tempfile
 
 from profiletools.loader import ProfileLoader
 from profiletools.path import esc, sub
@@ -12,18 +14,62 @@ from profiletools.path import esc, sub
 log = logging.getLogger(__name__)
 
 
+def is_the_same(file1, file2):
+    st1 = os.stat(file1)
+    st2 = os.stat(file2)
+    # 0: st_mode - protection bits,
+    # st_ino - inode number,
+    # st_dev - device,
+    # st_nlink - number of hard links,
+    # st_uid - user id of owner,
+    # st_gid - group id of owner,
+    # 6: st_size - size of file, in bytes,
+    # st_atime - time of most recent access,
+    # st_mtime - time of most recent content modification,
+    # st_ctime - platform dependent; time of most recent metadata change on Unix, or the time of creation on Windows)
+    getkey = lambda st: st[6]
+    key1 = getkey(st1)
+    key2 = getkey(st2)
+    if key1 != key2:
+        return False
 
-def patch(origin, patch):
-    cmd = 'patch %s %s' % (origin, patch)
-    return os.system(cmd)
+    hash1 = hashlib.md5(open(file1).read()).hexdigest()
+    hash2 = hashlib.md5(open(file2).read()).hexdigest()
+    if hash1 != hash2:
+        print file1, file2
+    return hash1 == hash2
 
 
-def savecopy(src, to):
+#FIXME: harcord path here
+BACKUP_PATH = os.path.expanduser('~/.my-profiles-backup')
+
+def back_up(path):
+    name = '%s.%s' % (time.time(), os.path.basename(path))
+    name = os.path.join(BACKUP_PATH, name)
+    os.rename(path, name)
+
+
+def patch(origin, patch, to):
+    fd, tmp = tempfile.mkstemp()
+    os.close(fd)
+    shutil.copyfile(origin, tmp)
+    os.system('patch %s %s' % (tmp, patch))
+    check_target(tmp, to)
+    os.rename(tmp, to)
+
+
+def check_target(src, to):
     if os.path.islink(to):
         os.unlink(to)
     elif os.path.exists(to):
-        os.rename(to, to + '.save.%s' % time.time())
-    shutil.copy2(src, to)
+        if is_the_same(src, to):
+            return
+        back_up(to)
+
+
+def savecopy(src, to):
+    check_target(src, to)
+    return shutil.copy2(src, to)
 
 
 class Module(object):
@@ -107,11 +153,8 @@ class Patch(Module):
             os.path.expanduser(args.target_root),
             os.path.expanduser(sub(rel)).lstrip(os.path.sep))
 
-        log.debug('%s -> %s', src, to)
-        savecopy(src, to)
-
-        log.debug('patch %s < %s', to, pat)
-        patch(to, pat)
+        log.debug('path: %s < %s > %s', src, pat, to)
+        patch(src, pat, to)
 
 
 def all_modules():

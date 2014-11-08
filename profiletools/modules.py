@@ -1,8 +1,9 @@
 import os
 import glob
+import time
 import inspect
 import logging
-from shutil import copyfile
+import shutil
 
 from profiletools.loader import ProfileLoader
 from profiletools.path import esc, sub
@@ -16,6 +17,13 @@ def patch(origin, patch):
     cmd = 'patch %s %s' % (origin, patch)
     return os.system(cmd)
 
+
+def savecopy(src, to):
+    if os.path.islink(to):
+        os.unlink(to)
+    elif os.path.exists(to):
+        os.rename(to, to + '.save.%s' % time.time())
+    shutil.copy2(src, to)
 
 
 class Module(object):
@@ -74,8 +82,8 @@ class Copy(Module):
         i = 0
         for src, to in self.find(args.profile_root, args.target_root):
             i += 1
-            copyfile(src, to)
             log.debug('%s -> %s', src, to)
+            savecopy(src, to)
         print i, 'file(s) copied'
         # TODO: check file exist and give choose
         # --yes to choose the default, normally means overwriting
@@ -99,11 +107,11 @@ class Patch(Module):
             os.path.expanduser(args.target_root),
             os.path.expanduser(sub(rel)).lstrip(os.path.sep))
 
-        copyfile(src, to)
         log.debug('%s -> %s', src, to)
+        savecopy(src, to)
 
-        patch(to, pat)
         log.debug('patch %s < %s', to, pat)
+        patch(to, pat)
 
 
 def all_modules():

@@ -30,7 +30,12 @@ def list_cmd(args):
 
 
 def st_cmd(args):
-    print '#FIXME: current file should move to some place inside target_root'
+    current = current_profile_name(args.target_root)
+    loader = ProfileLoader(args.profile_root)
+    profile = loader.get(current)
+
+    for mod in profile.settings['files']:
+        mod.check(args)
 
 
 def apply_cmd(args):

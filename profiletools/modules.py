@@ -54,13 +54,12 @@ def back_up(path):
     os.rename(path, name)
 
 
-def patch(origin, patch, to):
-    fd, tmp = tempfile.mkstemp()
-    os.close(fd)
-    shutil.copyfile(origin, tmp)
-    os.system('patch %s %s >/dev/null' % (tmp, patch))
+def patch_through(origin, patch, to, tmp):
+    if not os.path.exists(tmp):
+        shutil.copyfile(origin, tmp)
+        os.system('patch %s %s >/dev/null' % (tmp, patch))
     if need_change(tmp, to):
-        os.rename(tmp, to)
+        shutil.copy2(tmp, to)
         return True
 
 
@@ -141,6 +140,16 @@ class Copy(Module):
         # TODO: check file exist and give choose
         # --yes to choose the default, normally means overwriting
 
+    def check(self, args):
+        print '>>>', self
+        i = 0
+        for src, to in self.find(args.profile_root, args.target_root):
+            if not is_the_same(src, to):
+                print 'D', to
+                i += 1
+        if i > 0:
+            print i, 'files(s) differ'
+
 
 class Patch(Module):
     """
@@ -159,10 +168,26 @@ class Patch(Module):
         to = os.path.join(
             os.path.expanduser(args.target_root),
             os.path.expanduser(sub(rel)).lstrip(os.path.sep))
+        tmp = pat + '.patched'
 
         log.debug('path: %s < %s > %s', src, pat, to)
-        if patch(src, pat, to):
+        if patch_through(src, pat, to, tmp):
             print '1 file patched'
+
+    def check(self, args):
+        print '>>>', self
+        base = ProfileLoader(args.profile_root).get(self.attrs['from'])
+
+        rel = esc(self.attrs['path']).lstrip(os.path.sep)
+        src = os.path.join(base.path, rel)
+        pat = os.path.join(self.profile.path, rel)
+        to = os.path.join(
+            os.path.expanduser(args.target_root),
+            os.path.expanduser(sub(rel)).lstrip(os.path.sep))
+        tmp = pat + '.patched'
+
+        if not is_the_same(tmp, to):
+            print '1 file differ'
 
 
 def all_modules():

@@ -23,13 +23,13 @@ def parse_args():
 
     sp = p.add_subparsers(title='subcommands')
 
-    list_p = sp.add_parser('list', help='list all available profiles')
+    list_p = sp.add_parser('br', help='list all available profiles')
     list_p.set_defaults(func=list_cmd)
 
     st_p = sp.add_parser('st', help='show status of current profile')
     st_p.set_defaults(func=st_cmd)
 
-    apply_p = sp.add_parser('apply', help='apply profile')
+    apply_p = sp.add_parser('co', help='apply profile')
     apply_p.set_defaults(func=apply_cmd)
     apply_p.add_argument('profile_name')
 

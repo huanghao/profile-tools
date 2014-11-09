@@ -1,11 +1,9 @@
 import os
-import glob
 import time
 import inspect
 import shutil
 import logging
 import hashlib
-import tempfile
 
 from profiletools.loader import ProfileLoader
 from profiletools.path import esc, sub
@@ -44,8 +42,9 @@ def is_the_same(file1, file2):
     return hash1 == hash2
 
 
-#FIXME: harcord path here
+# FIXME: harcord path here
 BACKUP_PATH = os.path.expanduser('~/.my-profiles-backup')
+
 
 def back_up(path):
     name = '%s_%s' % (time.time(), path.replace(os.path.sep, '_'))
@@ -87,13 +86,13 @@ class Module(object):
 
     def __str__(self):
         return '%s(%s)' % (self.__class__.__name__,
-            ', '.join(['%s=%s' % (k,v) for k,v in self.attrs.items()]))
+            ', '.join(['%s=%s' % (k, v) for k, v in self.attrs.items()]))
 
     def apply(self, _args):
         """
         Apply this module
         """
-        raise NotImplementError
+        raise NotImplementedError
 
     def find(self, profile_root, target_root):
         if 'from' in self.attrs:
@@ -104,6 +103,7 @@ class Module(object):
 
         if 'exclude' in self.attrs:
             excludes = self.attrs['exclude'].split(',')
+
             def exclude(path):
                 return any(path.startswith(ex) for ex in excludes)
         else:
@@ -116,7 +116,6 @@ class Module(object):
                 os.path.expanduser(target_root),
                 os.path.expanduser(sub(rel)).lstrip(os.path.sep))
             yield src, to
-
 
 
 class Copy(Module):
@@ -204,11 +203,12 @@ def all_modules():
     return {k.lower(): v
             for k, v in globals().items()
             if inspect.isclass(v) and issubclass(v, Module)}
-            
+
 MODULES = all_modules()
 
+
 def parse_attrs(value):
-    #FIXME: deal with whitespaces, enclosed by double quotes
+    # FIXME: deal with whitespaces, enclosed by double quotes
     return dict([i.split('=', 1) for i in value.split()])
 
 

@@ -9,7 +9,7 @@ setup(
     author_email='huang1hao@gmail.com',
     packages=find_packages(),
     scripts=[
-        'profiles.py',
+        'myconf.py',
     ],
     install_requires=[
         'pyYAML',

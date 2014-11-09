@@ -16,15 +16,7 @@ Two types of absoluate path:
 
 - inside of target-root
   {target-root|expanduser}/{unquoted|expanduser}
-
-Functions:
-
-- esc: unquoted -> quoted
-- sub: quoted -> unquoted
-- pabs: (profile-root, unquoted) -> pabs
-- tabs: (target-root, quoted) -> tabs
 """
-import os
 
 
 def esc(path):

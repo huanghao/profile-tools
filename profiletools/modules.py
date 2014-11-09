@@ -14,6 +14,10 @@ from profiletools.path import esc, sub
 log = logging.getLogger(__name__)
 
 
+class UnknownModule(Exception):
+    pass
+
+
 def is_the_same(file1, file2):
     st1 = os.stat(file1)
     st2 = os.stat(file2)
@@ -78,11 +82,9 @@ def savecopy(src, to):
 
 class Module(object):
 
-    def __init__(self, profile, attrs, base=None):
+    def __init__(self, profile, attrs):
         self.profile = profile
-        if not base:
-            base = {}
-        self.attrs = dict(base, **attrs)
+        self.attrs = dict(attrs)
 
     def __str__(self):
         return '%s(%s)' % (self.__class__.__name__,
@@ -175,8 +177,8 @@ def parse_attrs(value):
     return dict([i.split('=', 1) for i in value.split()])
 
 
-def create_module(name, profile, attrs, baseattrs):
+def create_module(name, profile, attrs):
     cls = MODULES.get(name)
     if not cls:
-        raise ValueError("Invalid module name: %s" % name)
-    return cls(profile, attrs, baseattrs)
+        raise UnknownModule("Invalid module: %s" % name)
+    return cls(profile, attrs)

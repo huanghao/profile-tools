@@ -82,18 +82,13 @@ class Profile(object):
         except Exception as err:
             raise BadProfile(err)
 
-        if 'from' in data:
-            baseattrs = {'from': data['from']}
-        else:
-            baseattrs = {}
-
         files = []
         for each in data.get('files', ()):
             if len(each) != 1:
                 raise ValueError("Invalid module conf: %s" % each)
             name, val = each.items()[0]
             attrs = parse_attrs(val)
-            files.append(create_module(name, self, attrs, baseattrs))
+            files.append(create_module(name, self, attrs))
         data['files'] = files
         return data
 

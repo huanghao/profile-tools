@@ -8,7 +8,7 @@ from fnmatch import fnmatch
 
 import yaml
 
-from profiletools.cmds import list_cmd, st_cmd, apply_cmd
+from profiletools.cmds import br_cmd, df_cmd, co_cmd
 
 
 def parse_args():
@@ -24,13 +24,14 @@ def parse_args():
     sp = p.add_subparsers(title='subcommands')
 
     list_p = sp.add_parser('br', help='list all available profiles')
-    list_p.set_defaults(func=list_cmd)
+    list_p.set_defaults(func=br_cmd)
 
-    st_p = sp.add_parser('st', help='show status of current profile')
-    st_p.set_defaults(func=st_cmd)
+    st_p = sp.add_parser('df', help='show status of current profile')
+    st_p.set_defaults(func=df_cmd)
+    st_p.add_argument('-v', '--verbose', action='store_true')
 
     apply_p = sp.add_parser('co', help='apply profile')
-    apply_p.set_defaults(func=apply_cmd)
+    apply_p.set_defaults(func=co_cmd)
     apply_p.add_argument('profile_name')
 
     return p.parse_args()

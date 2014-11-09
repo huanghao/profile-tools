@@ -3,7 +3,7 @@ from profiletools.loader import (
     BadProfile, ProfileNotFound)
 
 
-def list_cmd(args):
+def br_cmd(args):
     loader = ProfileLoader(args.profile_root)
     try:
         current = current_profile_name(args.target_root)
@@ -29,16 +29,16 @@ def list_cmd(args):
     print 'use "%s apply" to apply a profile.'
 
 
-def st_cmd(args):
+def df_cmd(args):
     current = current_profile_name(args.target_root)
     loader = ProfileLoader(args.profile_root)
     profile = loader.get(current)
 
     for mod in profile.settings['files']:
-        mod.check(args)
+        mod.diff(args)
 
 
-def apply_cmd(args):
+def co_cmd(args):
     loader = ProfileLoader(args.profile_root)
     profile = loader.get(args.profile_name)
 

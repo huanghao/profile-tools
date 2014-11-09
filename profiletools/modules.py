@@ -140,13 +140,18 @@ class Copy(Module):
         # TODO: check file exist and give choose
         # --yes to choose the default, normally means overwriting
 
-    def check(self, args):
+    def diff(self, args):
         print '>>>', self
         i = 0
         for src, to in self.find(args.profile_root, args.target_root):
             if not is_the_same(src, to):
-                print 'D', to
                 i += 1
+                if args.verbose:
+                    cmd = 'diff %s %s' % (src, to)
+                    print cmd
+                    os.system(cmd)
+                else:
+                    print 'D', to
         if i > 0:
             print i, 'files(s) differ'
 
@@ -174,7 +179,7 @@ class Patch(Module):
         if patch_through(src, pat, to, tmp):
             print '1 file patched'
 
-    def check(self, args):
+    def diff(self, args):
         print '>>>', self
         base = ProfileLoader(args.profile_root).get(self.attrs['from'])
 
@@ -187,7 +192,12 @@ class Patch(Module):
         tmp = pat + '.patched'
 
         if not is_the_same(tmp, to):
-            print '1 file differ'
+            if args.verbose:
+                cmd = 'diff %s %s' % (src, to)
+                print cmd
+                os.system(cmd)
+            else:
+                print 'D', to
 
 
 def all_modules():

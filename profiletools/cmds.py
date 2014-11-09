@@ -46,3 +46,10 @@ def co_cmd(args):
         mod.apply(args)
 
     set_current_profile_name(args.target_root, args.profile_name)
+
+def ci_cmd(args):
+    print 'ci'
+
+
+def push_cmd(args):
+    print 'push'

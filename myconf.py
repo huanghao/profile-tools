@@ -3,7 +3,7 @@ import os
 import argparse
 import logging
 
-from profiletools.cmds import br_cmd, df_cmd, co_cmd
+from profiletools.cmds import br_cmd, df_cmd, co_cmd, ci_cmd, push_cmd
 
 
 def parse_args():
@@ -28,6 +28,13 @@ def parse_args():
     co = sp.add_parser('co', help='apply profile')
     co.set_defaults(func=co_cmd)
     co.add_argument('profile_name')
+    # FIXME: check df before co
+
+    ci = sp.add_parser('ci', help='commit changed')
+    ci.set_defaults(func=ci_cmd)
+
+    push = sp.add_parser('push', help='push committed changes to remote')
+    push.set_defaults(func=push)
 
     return p.parse_args()
 

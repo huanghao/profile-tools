@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import inspect
 import shutil
@@ -47,6 +48,8 @@ BACKUP_PATH = os.path.expanduser('~/.my-profiles-backup')
 
 
 def back_up(path):
+    if not os.path.exists(BACKUP_PATH):
+        os.mkdir(BACKUP_PATH)
     name = '%s_%s' % (time.time(), path.replace(os.path.sep, '_'))
     name = os.path.join(BACKUP_PATH, name)
     print 'backup', path, 'to', name
@@ -143,11 +146,15 @@ class Copy(Module):
         print '>>>', self
         i = 0
         for src, to in self.find(args.profile_root, args.target_root):
-            if not is_the_same(src, to):
+            if not os.path.exists(to):
+                print 'X', to
+                i += 1
+            elif not is_the_same(src, to):
                 i += 1
                 if args.verbose:
                     cmd = 'diff %s %s' % (src, to)
                     print cmd
+                    sys.stdout.flush()
                     os.system(cmd)
                 else:
                     print 'D', to
@@ -190,10 +197,15 @@ class Patch(Module):
             os.path.expanduser(sub(rel)).lstrip(os.path.sep))
         tmp = pat + '.patched'
 
-        if not is_the_same(tmp, to):
+        if not os.path.exists(tmp):
+            print 'x', tmp
+        elif not os.path.exists(to):
+            print 'X', to
+        elif not is_the_same(tmp, to):
             if args.verbose:
-                cmd = 'diff %s %s' % (src, to)
+                cmd = 'diff %s %s' % (tmp, to)
                 print cmd
+                sys.stdout.flush()
                 os.system(cmd)
             else:
                 print 'D', to

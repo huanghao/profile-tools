@@ -1,3 +1,5 @@
+import sys
+
 from profiletools.loader import (
     ProfileLoader, current_profile_name, set_current_profile_name,
     BadProfile, ProfileNotFound)
@@ -47,9 +49,11 @@ def co_cmd(args):
 
     set_current_profile_name(args.target_root, args.profile_name)
 
+
 def ci_cmd(args):
-    print 'ci'
+    current = current_profile_name(args.target_root)
+    loader = ProfileLoader(args.profile_root)
+    profile = loader.get(current)
 
-
-def push_cmd(args):
-    print 'push'
+    for mod in profile.settings['files']:
+        mod.checkin(args)

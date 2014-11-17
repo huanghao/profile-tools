@@ -97,6 +97,16 @@ class Module(object):
         """
         raise NotImplementedError
 
+
+class Copy(Module):
+    """
+    Copy from another profile. Example::
+
+    copy: path=~
+    copy: path=~ from=base
+    copy: path=~ exclude=~/bin,~/.ssh
+    """
+
     def find(self, profile_root, target_root):
         if 'from' in self.attrs:
             profile = ProfileLoader(
@@ -119,16 +129,6 @@ class Module(object):
                 os.path.expanduser(target_root),
                 os.path.expanduser(sub(rel)).lstrip(os.path.sep))
             yield src, to
-
-
-class Copy(Module):
-    """
-    Copy from another profile. Example::
-
-    copy: path=~
-    copy: path=~ from=base
-    copy: path=~ exclude=~/bin,~/.ssh
-    """
 
     def apply(self, args):
         print '>>>', self
@@ -161,6 +161,26 @@ class Copy(Module):
         if i > 0:
             print i, 'files(s) differ'
 
+    def checkin(self, args):
+        print '>>>', self
+        i = 0
+        for src, to in self.find(args.profile_root, args.target_root):
+            if not os.path.exists(src):
+                print 'copy', to, '->', src
+                shutil.copy2(to, src)
+                i += 1
+            elif not os.path.exists(to):
+                raise Exception("target file missed: %s" % to)
+            elif not is_the_same(to, src):
+                ch = raw_input("overwrite %s [Y/n]: " % src)
+                if ch.lower().startswith('n'):
+                    continue
+                print 'copy', to, '->', src
+                shutil.copy2(to, src)
+                i += 1
+        if i > 0:
+            print i, 'files(s) checked-in'
+
 
 class Patch(Module):
     """
@@ -169,34 +189,27 @@ class Patch(Module):
     patch: path=~/.ssh/config
     patch: path=~/.ssh/config from=base
     """
-    def apply(self, args):
-        print '>>>', self
-        base = ProfileLoader(args.profile_root).get(self.attrs['from'])
-
+    def find(self, profile_root, target_root):
+        base = ProfileLoader(profile_root).get(self.attrs['from'])
         rel = esc(self.attrs['path']).lstrip(os.path.sep)
         src = os.path.join(base.path, rel)
         pat = os.path.join(self.profile.path, rel)
         to = os.path.join(
-            os.path.expanduser(args.target_root),
+            os.path.expanduser(target_root),
             os.path.expanduser(sub(rel)).lstrip(os.path.sep))
         tmp = pat + '.patched'
+        return src, pat, to, tmp
 
+    def apply(self, args):
+        print '>>>', self
+        src, pat, to, tmp = self.find(args.profile_root, args.target_root)
         log.debug('path: %s < %s > %s', src, pat, to)
         if patch_through(src, pat, to, tmp):
             print '1 file patched'
 
     def diff(self, args):
         print '>>>', self
-        base = ProfileLoader(args.profile_root).get(self.attrs['from'])
-
-        rel = esc(self.attrs['path']).lstrip(os.path.sep)
-        src = os.path.join(base.path, rel)
-        pat = os.path.join(self.profile.path, rel)
-        to = os.path.join(
-            os.path.expanduser(args.target_root),
-            os.path.expanduser(sub(rel)).lstrip(os.path.sep))
-        tmp = pat + '.patched'
-
+        src, pat, to, tmp = self.find(args.profile_root, args.target_root)
         if not os.path.exists(tmp):
             print 'x', tmp
         elif not os.path.exists(to):
@@ -209,6 +222,24 @@ class Patch(Module):
                 os.system(cmd)
             else:
                 print 'D', to
+
+    def checkin(self, args):
+        print '>>>', self
+        src, pat, to, tmp = self.find(args.profile_root, args.target_root)
+        if not os.path.exists(src):
+            raise Exception("Source file missed: %s" % src)
+        elif not os.path.exists(to):
+            raise Exception("Target file missed: %s" % to)
+        elif not os.path.exists(tmp):
+            raise Exception("Patched file missed: %s" % tmp)
+        elif not is_the_same(to, tmp):
+            if os.path.exists(pat):
+                ch = raw_input("Overwrite %s [Y/n]: " % pat)
+                if ch.lower().startswith('n'):
+                    return
+            cmd = 'diff %s %s > %s' % (src, to, pat)
+            print cmd
+            os.system(cmd)
 
 
 def all_modules():

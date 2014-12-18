@@ -9,7 +9,7 @@ class Profile
     @desc = desc
   end
 
-  def copy(path:)
+  def file(path:)
     from = @base ? @base : @name
     puts "copy from #{from}:#{path} to #{path}"
   end
@@ -38,10 +38,10 @@ define "pc" do |profile|
 
   puts "Profile: #{self}"
 
-  copy path: "~/.ssh"
+  file path: "~/.ssh"
 
   from "home" do
-    copy path: "~"
+    file path: "~"
     patch path: "~/.ssh/config"
     patch path: "~/.gitignore"
   end
